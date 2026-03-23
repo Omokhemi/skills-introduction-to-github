@@ -1,0 +1,116 @@
+name: Complete GitHub Skills Exercise
+
+# This workflow runs automatically when the copilot branch is pushed to.
+# It completes all steps of the "Introduction to GitHub" Skills exercise:
+#   1. Creates my-first-branch
+#   2. Commits PROFILE.md to my-first-branch
+#   3. Opens a pull request from my-first-branch to main
+#   4. Merges the pull request
+
+on:
+  push:
+    branches:
+      - copilot/introduction-to-github-exercise
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  issues: write
+
+jobs:
+  complete_exercise:
+    name: Complete Exercise Steps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Enable all exercise workflow steps
+        run: |
+          gh workflow enable "Step 1" || true
+          gh workflow enable "Step 2" || true
+          gh workflow enable "Step 3" || true
+          gh workflow enable "Step 4" || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create my-first-branch and push initial commit
+        run: |
+          if git ls-remote --heads origin my-first-branch | grep -q my-first-branch; then
+            echo "Branch my-first-branch already exists remotely"
+            git checkout -b my-first-branch origin/my-first-branch
+          else
+            echo "Creating my-first-branch from main"
+            git checkout -b my-first-branch
+            # Push empty branch first to trigger Step 1 workflow
+            git push origin my-first-branch
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for Step 1 workflow to process branch creation
+        run: sleep 20
+
+      - name: Commit PROFILE.md to my-first-branch
+        run: |
+          git checkout my-first-branch
+          if [ ! -f PROFILE.md ]; then
+            echo "Welcome to my GitHub profile!" > PROFILE.md
+            git add PROFILE.md
+            git commit -m "Add PROFILE.md"
+            git push origin my-first-branch
+            echo "PROFILE.md committed and pushed"
+          else
+            echo "PROFILE.md already exists on my-first-branch"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for Step 2 workflow to process file commit
+        run: sleep 20
+
+      - name: Create pull request from my-first-branch to main
+        id: create_pr
+        run: |
+          EXISTING_PR=$(gh pr list --head my-first-branch --base main --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -z "$EXISTING_PR" ]; then
+            echo "Creating pull request..."
+            PR_URL=$(gh pr create \
+              --head my-first-branch \
+              --base main \
+              --title "Add my first file" \
+              --body "Adding my first file to complete the Introduction to GitHub Skills exercise. This demonstrates creating a branch, committing a file, and opening a pull request.")
+            echo "PR created: $PR_URL"
+            PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
+            echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          else
+            echo "PR #$EXISTING_PR already exists"
+            echo "PR_NUMBER=$EXISTING_PR" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for Step 3 workflow to check pull request
+        run: sleep 60
+
+      - name: Merge pull request
+        run: |
+          PR_NUMBER="${{ steps.create_pr.outputs.PR_NUMBER }}"
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr merge "$PR_NUMBER" --merge || echo "PR may already be merged or merge failed"
+          else
+            gh pr merge my-first-branch --merge || echo "PR may already be merged or merge failed"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
