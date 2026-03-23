@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nigerian Low-GI Meal Planner – Blood Sugar Friendly</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f0e8;
+      color: #2d2d2d;
+      line-height: 1.65;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a6b3a 0%, #2e9e5b 100%);
+      color: #fff;
+      text-align: center;
+      padding: 2.5rem 1rem 2rem;
+    }
+    header h1 {
+      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+    header p {
+      margin-top: .6rem;
+      font-size: clamp(.85rem, 2.5vw, 1.05rem);
+      opacity: .92;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .flag { font-size: 1.6rem; vertical-align: middle; }
+
+    /* ── Info banner ── */
+    .info-banner {
+      background: #fff8e1;
+      border-left: 5px solid #f9a825;
+      max-width: 900px;
+      margin: 1.6rem auto 0;
+      padding: .9rem 1.2rem;
+      border-radius: 6px;
+      font-size: .9rem;
+    }
+    .info-banner strong { color: #e65100; }
+
+    /* ── Day-plan builder ── */
+    .planner-controls {
+      max-width: 900px;
+      margin: 1.8rem auto 0;
+      padding: 0 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .8rem;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: .7rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: transform .1s, opacity .2s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: #1a6b3a; color: #fff; }
+    .btn-primary:hover { background: #155a30; }
+    .btn-secondary { background: #fff; color: #1a6b3a; border: 2px solid #1a6b3a; }
+    .btn-secondary:hover { background: #eaf4ee; }
+
+    /* ── Daily plan card ── */
+    #daily-plan {
+      max-width: 900px;
+      margin: 1.4rem auto;
+      padding: 0 1rem;
+      display: none;
+    }
+    #daily-plan.visible { display: block; }
+    .plan-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.4rem 1.6rem;
+      box-shadow: 0 3px 14px rgba(0,0,0,.10);
+    }
+    .plan-card h2 {
+      color: #1a6b3a;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+    .plan-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .plan-meal {
+      flex: 1;
+      min-width: 200px;
+      background: #f0faf4;
+      border-radius: 8px;
+      padding: .9rem 1rem;
+      border-left: 4px solid #2e9e5b;
+    }
+    .plan-meal .meal-label {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #777;
+      font-weight: 700;
+    }
+    .plan-meal .meal-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1a6b3a;
+      margin: .25rem 0 .2rem;
+    }
+    .plan-meal .meal-gi {
+      font-size: .82rem;
+      color: #555;
+    }
+
+    /* ── Section tabs ── */
+    main { max-width: 900px; margin: 0 auto; padding: 1.6rem 1rem 3rem; }
+
+    .tabs {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.6rem;
+    }
+    .tab-btn {
+      cursor: pointer;
+      padding: .55rem 1.4rem;
+      border-radius: 30px;
+      border: 2px solid #1a6b3a;
+      background: transparent;
+      color: #1a6b3a;
+      font-size: .95rem;
+      font-weight: 600;
+      transition: background .2s, color .2s;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: #1a6b3a;
+      color: #fff;
+    }
+
+    /* ── Meal section ── */
+    .meal-section { display: none; }
+    .meal-section.active { display: block; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      margin-bottom: 1.2rem;
+    }
+    .section-icon { font-size: 2rem; }
+    .section-header h2 { font-size: 1.5rem; color: #1a6b3a; }
+    .section-header small {
+      display: block;
+      color: #666;
+      font-size: .85rem;
+      font-weight: 400;
+    }
+
+    /* ── Food cards ── */
+    .food-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.2rem;
+    }
+
+    .food-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      overflow: hidden;
+      transition: transform .18s, box-shadow .18s;
+      cursor: pointer;
+    }
+    .food-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.13); }
+
+    .food-card-header {
+      background: linear-gradient(135deg, #1a6b3a, #40b072);
+      color: #fff;
+      padding: 1rem 1.1rem .8rem;
+    }
+    .food-card-header h3 { font-size: 1.05rem; font-weight: 700; }
+    .food-card-header .food-meta {
+      display: flex;
+      gap: .6rem;
+      flex-wrap: wrap;
+      margin-top: .4rem;
+    }
+    .badge {
+      font-size: .7rem;
+      font-weight: 700;
+      padding: .18rem .55rem;
+      border-radius: 20px;
+      letter-spacing: .03em;
+    }
+    .badge-gi   { background: #c8f7d4; color: #0a4d1e; }
+    .badge-type { background: rgba(255,255,255,.22); color: #fff; }
+
+    .food-card-body { padding: 1rem 1.1rem; }
+    .food-card-body p { font-size: .88rem; color: #555; margin-bottom: .7rem; }
+
+    .recipe-toggle {
+      font-size: .82rem;
+      color: #1a6b3a;
+      font-weight: 700;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: .25rem;
+    }
+    .recipe-toggle::after { content: '▼'; font-size: .7rem; transition: transform .2s; }
+    .recipe-toggle.open::after { transform: rotate(-180deg); }
+
+    .recipe-box {
+      margin-top: .7rem;
+      background: #f7fdf9;
+      border-radius: 8px;
+      padding: .8rem .95rem;
+      border: 1px solid #d0eedd;
+      font-size: .84rem;
+      display: none;
+    }
+    .recipe-box.visible { display: block; }
+    .recipe-box h4 {
+      color: #1a6b3a;
+      font-size: .85rem;
+      margin-bottom: .35rem;
+    }
+    .recipe-box ul, .recipe-box ol {
+      padding-left: 1.2rem;
+      color: #444;
+    }
+    .recipe-box li { margin-bottom: .25rem; }
+    .recipe-box .note {
+      margin-top: .6rem;
+      font-style: italic;
+      color: #777;
+      font-size: .8rem;
+    }
+
+    /* ── Market note ── */
+    .market-note {
+      margin-top: 2rem;
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.1rem 1.3rem;
+      border-left: 5px solid #f9a825;
+      font-size: .88rem;
+      color: #555;
+    }
+    .market-note strong { color: #1a6b3a; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 1.4rem;
+      font-size: .8rem;
+      color: #888;
+      background: #e8f5ee;
+    }
+
+    /* ── Responsive tweaks ── */
+    @media (max-width: 480px) {
+      .plan-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════ HEADER ════════════════ -->
+<header>
+  <h1><span class="flag">🇳🇬</span> Nigerian Low-GI Meal Planner</h1>
+  <p>Discover blood-sugar-friendly Nigerian foods available in US African grocery stores,
+     with easy recipes to help you reduce blood sugar spikes.</p>
+</header>
+
+<!-- ════════════════ INFO BANNER ════════════════ -->
+<div class="info-banner" style="max-width:900px;margin:1.4rem auto 0;padding:0 1rem;">
+  <div style="background:#fff8e1;border-left:5px solid #f9a825;padding:.9rem 1.2rem;border-radius:6px;">
+    <strong>ℹ️ What is Glycemic Index (GI)?</strong><br />
+    GI measures how quickly a food raises blood sugar. <strong>Low GI ≤ 55</strong> means slow, steady release —
+    ideal for managing blood sugar and insulin levels. All meals listed here are <strong>GI ≤ 55</strong>.
+  </div>
+</div>
+
+<!-- ════════════════ DAY PLANNER ════════════════ -->
+<div class="planner-controls">
+  <button class="btn btn-primary" onclick="randomizePlan()">🎲 Randomize My Day's Meals</button>
+  <button class="btn btn-secondary" onclick="clearPlan()">✕ Clear Plan</button>
+</div>
+
+<div id="daily-plan">
+  <div class="plan-card">
+    <h2>📋 Your Suggested Meal Plan for Today</h2>
+    <div class="plan-row" id="plan-row"></div>
+  </div>
+</div>
+
+<!-- ════════════════ MAIN CONTENT ════════════════ -->
+<main>
+
+  <!-- Tab navigation -->
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" role="tab" onclick="showTab('breakfast', this)">🌅 Breakfast</button>
+    <button class="tab-btn" role="tab" onclick="showTab('lunch', this)">☀️ Lunch</button>
+    <button class="tab-btn" role="tab" onclick="showTab('dinner', this)">🌙 Dinner</button>
+  </div>
+
+  <!-- ──── BREAKFAST ──── -->
+  <section class="meal-section active" id="breakfast">
+    <div class="section-header">
+      <span class="section-icon">🌅</span>
+      <h2>Breakfast <small>Start your day with slow-release energy</small></h2>
+    </div>
+    <div class="food-grid" id="breakfast-grid"></div>
+  </section>
+
+  <!-- ──── LUNCH ──── -->
+  <section class="meal-section" id="lunch">
+    <div class="section-header">
+      <span class="section-icon">☀️</span>
+      <h2>Lunch <small>Sustaining mid-day meals with fiber & protein</small></h2>
+    </div>
+    <div class="food-grid" id="lunch-grid"></div>
+  </section>
+
+  <!-- ──── DINNER ──── -->
+  <section class="meal-section" id="dinner">
+    <div class="section-header">
+      <span class="section-icon">🌙</span>
+      <h2>Dinner <small>Light, nourishing evening meals</small></h2>
+    </div>
+    <div class="food-grid" id="dinner-grid"></div>
+  </section>
+
+  <!-- Market note -->
+  <div class="market-note">
+    <strong>🛒 Where to find these ingredients in the US:</strong>
+    Most of these ingredients — including unripe plantain, black-eyed peas, egusi (melon seeds),
+    crayfish, stockfish, dried bitter leaf, ugu (fluted pumpkin leaves), oat flour, and palm oil —
+    are available at <em>African grocery stores</em> in major US cities (often listed online as
+    "African Market," "West African Grocery," or "Nigerian Store"). You can also find many items
+    on Amazon, Walmart online, or specialty stores like Whole Foods (beans, plantain, leafy greens).
+  </div>
+
+</main>
+
+<footer>
+  &copy; 2025 Nigerian Low-GI Meal Planner &bull; Always consult a healthcare provider for personalized dietary advice.
+</footer>
+
+<!-- ════════════════ DATA & LOGIC ════════════════ -->
+<script>
+  // ── Meal data ──────────────────────────────────────────────────────────────
+  const meals = {
+    breakfast: [
+      {
+        name: "Unripe Plantain Porridge (Asaro)",
+        gi: "GI ≈ 38",
+        type: "Porridge",
+        desc: "Boiled unripe plantain in a light tomato-palm-oil base. Unripe plantain has resistant starch that slows glucose absorption significantly.",
+        ingredients: ["2 unripe plantains, peeled & cubed","1 small onion, diced","1 tbsp palm oil","1 tomato, blended","Salt & seasoning cube to taste","Optional: smoked fish or crayfish (2 tbsp)"],
+        steps: [
+          "Boil plantain cubes in lightly salted water for 10 min.",
+          "In a separate pot, heat palm oil and sauté onion for 2 min.",
+          "Add blended tomato, cook 5 min until sauce thickens.",
+          "Add drained plantain, crayfish/fish, seasoning, and ½ cup water.",
+          "Simmer 10–12 min, mashing some chunks slightly. Serve warm."
+        ],
+        note: "✅ Available: Unripe plantain, palm oil, crayfish — all found at African markets."
+      },
+      {
+        name: "Moi Moi (Steamed Bean Pudding)",
+        gi: "GI ≈ 30",
+        type: "Protein-rich",
+        desc: "Steamed black-eyed pea pudding packed with plant protein and fiber. One of the lowest-GI Nigerian dishes — ideal for a filling, stable-energy breakfast.",
+        ingredients: ["2 cups black-eyed peas (peeled)","1 red bell pepper","1 scotch bonnet pepper (optional)","1 small onion","3 tbsp palm oil","2 eggs (optional, for firm texture)","Salt & seasoning cube","Smoked fish or shrimp (optional)"],
+        steps: [
+          "Soak peeled black-eyed peas in water for 30 min. Blend smooth with peppers and onion.",
+          "Mix in palm oil, seasoning, salt, and beaten eggs if using.",
+          "Pour into ramekins, foil pouches, or banana leaves. Add fish/shrimp on top.",
+          "Steam over boiling water for 40–45 min until firm. Serve warm.",
+        ],
+        note: "✅ Available: Black-eyed peas (peeled) sold at African markets & Walmart."
+      },
+      {
+        name: "Akara (Black-Eyed Pea Fritters)",
+        gi: "GI ≈ 32",
+        type: "Fritters",
+        desc: "Crispy bean fritters made with blended black-eyed peas. High in plant protein, low GI — a classic Nigerian breakfast street food.",
+        ingredients: ["1 cup peeled black-eyed peas","¼ onion","1 scotch bonnet (optional)","Salt to taste","Oil for frying (use groundnut/peanut oil)"],
+        steps: [
+          "Blend soaked, peeled beans with onion and a little water until smooth.",
+          "Season with salt; batter should be thick.",
+          "Whisk vigorously by hand for 2 min to add air (makes them fluffy).",
+          "Drop spoonfuls into hot oil (180°C). Fry 3–4 min per side until golden.",
+          "Drain on paper towels. Serve with oat pap (ogi) or cucumber slices."
+        ],
+        note: "💡 Tip: Air-fry at 190°C for 12 min (flip halfway) for an oil-free option."
+      },
+      {
+        name: "Oat Pap (Oat Ogi / Oatmeal Pap)",
+        gi: "GI ≈ 42",
+        type: "Porridge",
+        desc: "A Nigerian-style oat porridge made with rolled oats instead of corn. Rich in beta-glucan fiber which actively lowers post-meal blood sugar spikes.",
+        ingredients: ["½ cup rolled oats","1½ cups water","Pinch of salt","Evaporated milk or unsweetened soy milk to taste","1 tsp ground crayfish or smoked fish (savory style, optional)"],
+        steps: [
+          "Bring water to a boil. Stir in rolled oats.",
+          "Cook 5 min, stirring constantly, until thick and creamy.",
+          "Season with salt. Serve sweet (with a little honey) or savory (with crayfish).",
+          "Top with a drizzle of unsweetened evaporated milk."
+        ],
+        note: "✅ Rolled oats available everywhere in the US. Crayfish from African markets."
+      },
+      {
+        name: "Boiled Eggs with Cucumber & Tomato",
+        gi: "GI ≈ 0",
+        type: "Light Protein",
+        desc: "Simple high-protein, zero-GI breakfast. Eggs stabilize blood sugar and keep you full. Pair with raw veggies for fiber and micronutrients.",
+        ingredients: ["2–3 eggs","1 cucumber, sliced","2 ripe tomatoes, sliced","Salt, black pepper","1 tsp olive oil (optional drizzle)"],
+        steps: [
+          "Boil eggs for 8–10 min (hard-boiled). Cool in cold water and peel.",
+          "Slice cucumber and tomatoes. Arrange on a plate.",
+          "Season with salt and pepper. Drizzle with olive oil if desired.",
+          "Serve immediately."
+        ],
+        note: "✅ All ingredients readily available at any US grocery store."
+      }
+    ],
+
+    lunch: [
+      {
+        name: "Efo Riro with Unripe Plantain",
+        gi: "GI ≈ 28",
+        type: "Soup & Swallow",
+        desc: "Rich Yoruba spinach stew (efo riro) served with boiled unripe plantain slices instead of eba. The dark leafy greens are loaded with fiber, iron, and antioxidants.",
+        ingredients: ["3 cups fresh spinach or African (Lagos) spinach (tete)","200g assorted meat or smoked fish","1 red bell pepper + 1 tomato (blended)","1 scotch bonnet","2 tbsp palm oil","1 onion","Crayfish, seasoning cube, salt","2 unripe plantains, boiled as 'swallow'"],
+        steps: [
+          "Blend peppers, tomato, and half the onion together.",
+          "Heat palm oil in a pot, fry remaining onion 2 min.",
+          "Pour in blended pepper mix, cook 15 min until oil rises to top.",
+          "Add cooked meat/fish, crayfish, seasoning. Simmer 5 min.",
+          "Add washed, chopped spinach. Stir, cook 3–4 min (don't overcook).",
+          "Serve with thick slices of boiled unripe plantain."
+        ],
+        note: "✅ African spinach / tete available at African markets. Regular spinach works too."
+      },
+      {
+        name: "Beans & Plantain Pottage (Ewa Agoyin Style)",
+        gi: "GI ≈ 33",
+        type: "Pottage",
+        desc: "Black-eyed pea or honey bean stew with chunks of unripe plantain. High protein + resistant starch combination makes this a powerhouse low-GI meal.",
+        ingredients: ["1 cup honey beans or black-eyed peas","1 unripe plantain, cubed","2 tbsp palm oil","1 onion, sliced","2 scotch bonnets or peppers, ground","Crayfish, seasoning, salt","Smoked fish (optional)"],
+        steps: [
+          "Boil pre-soaked beans in water for 40–50 min until very soft.",
+          "Add plantain cubes halfway through cooking.",
+          "In a pan, heat palm oil until dark (for authentic ewa agoyin flavor), add sliced onion and ground peppers. Cook 8 min.",
+          "Pour pepper sauce over beans and plantain. Mix and simmer 10 min.",
+          "Mash lightly — leave some texture. Serve."
+        ],
+        note: "✅ Honey beans (oloyin) and plantain widely available at African markets."
+      },
+      {
+        name: "Okra Soup with Oat Eba",
+        gi: "GI ≈ 25",
+        type: "Soup & Swallow",
+        desc: "Slimy okra soup is rich in soluble fiber (mucilage) that binds glucose and slows absorption. Served with oat-eba (oat flour fufu) instead of cassava.",
+        ingredients: ["2 cups fresh or frozen okra, chopped","150g beef, goat meat, or fish","2 tbsp palm oil","Crayfish, ogiri (locust beans), seasoning, salt","1 cup oat flour (for eba swallow)","Boiling water for eba"],
+        steps: [
+          "Cook meat/fish until tender. Set aside, reserve stock.",
+          "Heat palm oil, add crayfish, ogiri, seasoning. Stir 1 min.",
+          "Add meat/fish stock. Bring to boil.",
+          "Add chopped okra and cooked meat/fish. Simmer 6–8 min (keep some sliminess).",
+          "For oat eba: pour oat flour into 1 cup boiling water, stir vigorously until firm dough forms.",
+          "Serve soup with oat eba."
+        ],
+        note: "✅ Frozen okra at most US supermarkets. Oat flour at Whole Foods, online, or grind rolled oats."
+      },
+      {
+        name: "Egusi Soup with Brown Rice",
+        gi: "GI ≈ 40",
+        type: "Soup & Rice",
+        desc: "Melon seed (egusi) soup is nutrient-dense, high in healthy fats and protein. Pairing with brown rice (GI≈50) instead of white keeps the overall meal GI low.",
+        ingredients: ["1 cup ground egusi (melon seeds)","200g assorted meat or stockfish","2 cups spinach or bitter leaf","2 tbsp palm oil","Blended pepper mix (tomato, bell pepper, scotch bonnet)","Crayfish, seasoning, salt","1 cup brown rice"],
+        steps: [
+          "Cook brown rice per packet instructions (about 35 min).",
+          "Heat palm oil, fry egusi in it for 5 min, stirring to prevent burning.",
+          "Add blended peppers. Cook 10 min.",
+          "Add meat/stockfish, crayfish, stock, seasoning. Simmer 15 min.",
+          "Fold in chopped greens. Cook 4 min more.",
+          "Serve soup over or beside brown rice."
+        ],
+        note: "✅ Ground egusi, stockfish, bitter leaf — all at African markets. Brown rice at any store."
+      },
+      {
+        name: "Vegetable Pepper Soup (Àbùlà)",
+        gi: "GI ≈ 10",
+        type: "Soup",
+        desc: "A light, spiced broth loaded with vegetables. Very low calorie and GI. Excellent for a light lunch on days you need digestive rest.",
+        ingredients: ["1 cup mixed vegetables: green beans, carrots, yam bean leaves","200g fish (tilapia or catfish)","1 tbsp pepper soup spice mix (uda, uziza, ehuru)","1 scotch bonnet","1 bouillon cube, salt","Uziza leaves or scent leaves (efirin)"],
+        steps: [
+          "Boil fish in water with spice mix, scotch bonnet, and bouillon. 15 min.",
+          "Add chopped vegetables. Cook 8 min.",
+          "Add uziza/scent leaves. Adjust seasoning.",
+          "Serve hot as a soup."
+        ],
+        note: "✅ Pepper soup spice blends sold at African markets. Catfish/tilapia at regular supermarkets."
+      }
+    ],
+
+    dinner: [
+      {
+        name: "Catfish Pepper Soup",
+        gi: "GI ≈ 5",
+        type: "Soup",
+        desc: "Classic Nigerian pepper soup made with catfish, aromatic spices, and minimal starch. Near-zero GI. Light on the stomach, perfect for dinner.",
+        ingredients: ["500g catfish, cleaned & cut into chunks","2 tbsp pepper soup spice (uda, uziza, ehuru)","2 scotch bonnet peppers","1 onion, sliced","1 bouillon cube, salt","Scent leaves (efirin) or uziza leaves, torn","Water"],
+        steps: [
+          "Place catfish in a pot with 3 cups water.",
+          "Add onion, scotch bonnet, bouillon cube, salt, and pepper soup spice.",
+          "Bring to boil, cook 20 min until fish is tender.",
+          "Add torn scent/uziza leaves. Simmer 2–3 min.",
+          "Adjust seasoning and serve hot."
+        ],
+        note: "✅ Catfish widely available. Pepper soup spice & uziza leaves at African markets."
+      },
+      {
+        name: "Bitter Leaf Soup (Ofe Onugbu)",
+        gi: "GI ≈ 20",
+        type: "Soup & Swallow",
+        desc: "Bitter leaf (onugbu) is known in traditional medicine to help lower blood sugar. This Igbo soup served with oat eba is a potent blood-sugar-friendly dinner.",
+        ingredients: ["2 cups dried or fresh bitter leaf, washed & squeezed","1 cup cocoyam paste (as thickener — GI ≈ 45)","200g beef, goat, or stockfish","2 tbsp palm oil","Crayfish, ogiri, seasoning, salt","Oat eba to serve"],
+        steps: [
+          "Boil meat/stockfish until tender. Reserve stock.",
+          "Add palm oil, crayfish, ogiri, seasoning to stock. Boil 5 min.",
+          "Whisk in cocoyam paste (or blend boiled cocoyam) — add gradually to thicken.",
+          "Add prepared bitter leaf. Simmer 10 min.",
+          "Serve with oat eba (stir oat flour into boiling water until firm)."
+        ],
+        note: "✅ Dried bitter leaf, cocoyam, ogiri — at African markets. Use oat flour for a lower-GI swallow."
+      },
+      {
+        name: "Grilled Tilapia with Steamed Vegetables",
+        gi: "GI ≈ 0",
+        type: "Grilled Fish",
+        desc: "Simply grilled tilapia with a Nigerian spice rub alongside steamed vegetables. Zero GI from the fish; minimal GI from low-starch vegetables. Great light dinner.",
+        ingredients: ["2 tilapia fillets or whole fish","1 tsp each: garlic powder, ginger, suya spice or curry","1 scotch bonnet, minced","1 lime or lemon, juiced","Salt to taste","Steamed broccoli, spinach, or green beans to serve"],
+        steps: [
+          "Score fish with a knife. Rub spice mix, salt, scotch bonnet, and lime juice all over.",
+          "Marinate 20 min.",
+          "Grill in oven at 200°C (390°F) for 20–25 min, flipping once. Or pan-fry 5–6 min per side.",
+          "Steam vegetables for 5–6 min (should still be bright and slightly crisp).",
+          "Serve fish with steamed vegetables."
+        ],
+        note: "✅ Tilapia widely available in US stores. Suya spice at African markets or online."
+      },
+      {
+        name: "Afang Soup with Oat Eba",
+        gi: "GI ≈ 22",
+        type: "Soup & Swallow",
+        desc: "Afang (wild spinach/okazi) and waterleaf soup is extremely nutrient-dense, high in fiber and protein. A wonderful low-GI dinner when served with oat eba.",
+        ingredients: ["2 cups finely shredded afang (okazi) leaves","3 cups waterleaf or spinach (chopped)","200g assorted meat (goat, beef, tripe)","2 tbsp palm oil","Crayfish, periwinkle (optional), seasoning, salt","Oat eba to serve"],
+        steps: [
+          "Cook meat until tender. Reserve stock.",
+          "Add palm oil, crayfish, and seasoning to stock. Boil 5 min.",
+          "Add waterleaf/spinach — cook 3 min.",
+          "Add shredded afang. Stir, cook 5–7 min.",
+          "Add periwinkle if using. Adjust salt.",
+          "Serve with oat eba."
+        ],
+        note: "✅ Dried/fresh afang (okazi) leaves at African markets. Periwinkle optional."
+      },
+      {
+        name: "Ogbono Soup with Cauliflower 'Fufu'",
+        gi: "GI ≈ 15",
+        type: "Soup & Swallow",
+        desc: "Draw soup made from wild mango seeds (ogbono) is thick, satisfying, and low GI. Serve with cauliflower fufu (mashed steamed cauliflower) for an ultra-low-GI dinner.",
+        ingredients: ["½ cup ground ogbono (wild mango seeds)","150g beef or fish","2 tbsp palm oil","Crayfish, seasoning, salt","1 cup spinach or ogiri","1 head cauliflower (for fufu)"],
+        steps: [
+          "Steam cauliflower until very soft. Mash until smooth. Set aside.",
+          "Heat palm oil. Add ogbono; fry 2 min (it will draw/string).",
+          "Add meat/fish stock gradually — 1 cup. Stir well.",
+          "Add cooked meat/fish, crayfish, seasoning. Simmer 15 min.",
+          "Fold in spinach. Cook 3 min.",
+          "Serve soup with cauliflower fufu portions."
+        ],
+        note: "✅ Ground ogbono at African markets. Cauliflower at any US supermarket."
+      }
+    ]
+  };
+
+  // ── Render cards ───────────────────────────────────────────────────────────
+  function renderCards(section) {
+    const grid = document.getElementById(`${section}-grid`);
+    grid.innerHTML = meals[section].map((meal, i) => `
+      <div class="food-card" onclick="toggleRecipe('${section}-${i}')">
+        <div class="food-card-header">
+          <h3>${meal.name}</h3>
+          <div class="food-meta">
+            <span class="badge badge-gi">${meal.gi}</span>
+            <span class="badge badge-type">${meal.type}</span>
+          </div>
+        </div>
+        <div class="food-card-body">
+          <p>${meal.desc}</p>
+          <button class="recipe-toggle" id="btn-${section}-${i}" onclick="event.stopPropagation(); toggleRecipe('${section}-${i}')">
+            View Recipe
+          </button>
+          <div class="recipe-box" id="recipe-${section}-${i}">
+            <h4>🛒 Ingredients</h4>
+            <ul>${meal.ingredients.map(ing => `<li>${ing}</li>`).join('')}</ul>
+            <h4 style="margin-top:.6rem">👩‍🍳 Steps</h4>
+            <ol>${meal.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+            <p class="note">${meal.note}</p>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleRecipe(id) {
+    const box = document.getElementById(`recipe-${id}`);
+    const btn = document.getElementById(`btn-${id}`);
+    const isOpen = box.classList.toggle('visible');
+    btn.classList.toggle('open', isOpen);
+    btn.textContent = isOpen ? 'Hide Recipe' : 'View Recipe';
+  }
+
+  // ── Tab switching ──────────────────────────────────────────────────────────
+  function showTab(name, el) {
+    document.querySelectorAll('.meal-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(name).classList.add('active');
+    el.classList.add('active');
+  }
+
+  // ── Randomize daily plan ───────────────────────────────────────────────────
+  function randomizePlan() {
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+    const b = pick(meals.breakfast);
+    const l = pick(meals.lunch);
+    const d = pick(meals.dinner);
+
+    document.getElementById('plan-row').innerHTML = [
+      { label: '🌅 Breakfast', meal: b },
+      { label: '☀️ Lunch',     meal: l },
+      { label: '🌙 Dinner',    meal: d }
+    ].map(({ label, meal }) => `
+      <div class="plan-meal">
+        <div class="meal-label">${label}</div>
+        <div class="meal-name">${meal.name}</div>
+        <div class="meal-gi">${meal.gi} &bull; ${meal.type}</div>
+      </div>
+    `).join('');
+
+    const plan = document.getElementById('daily-plan');
+    plan.classList.add('visible');
+    plan.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function clearPlan() {
+    document.getElementById('daily-plan').classList.remove('visible');
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  renderCards('breakfast');
+  renderCards('lunch');
+  renderCards('dinner');
+</script>
+</body>
+</html>
