@@ -1,0 +1,16 @@
+name: Copilot Setup Steps
+
+# This workflow configures the environment for GitHub Copilot coding agent tasks.
+# It runs before Copilot begins working on any issue assigned to it.
+# See: https://docs.github.com/en/copilot/customizing-copilot/customizing-the-development-environment-for-copilot-coding-agent
+
+on:
+  workflow_dispatch:
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
